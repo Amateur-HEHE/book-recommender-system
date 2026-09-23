@@ -1,47 +1,78 @@
-from flask import Flask,render_template,request
+from flask import Flask, render_template, request
 import pickle
 import numpy as np
 
-popular_df = pickle.load(open('popular.pkl','rb'))
-pt = pickle.load(open('pt.pkl','rb'))
-books = pickle.load(open('books.pkl','rb'))
-similarity_scores = pickle.load(open('similarity_scores.pkl','rb'))
+popular_df = pickle.load(open('popular.pkl', 'rb'))
+pt = pickle.load(open('pt.pkl', 'rb'))
+books = pickle.load(open('books.pkl', 'rb'))
+similarity_scores = pickle.load(open('similarity_scores.pkl', 'rb'))
 
 app = Flask(__name__)
 
+# One row per title, so lookups are fast
+book_info = books.drop_duplicates('Book-Title').set_index('Book-Title')
+TITLES = list(pt.index)
+LOWER_TITLES = pt.index.str.lower()
+
+
+def https(url):
+    # Amazon cover URLs are http; this avoids mixed-content warnings when deployed on https
+    return url.replace('http://', 'https://') if isinstance(url, str) else url
+
+
 @app.route('/')
 def index():
-    return render_template('index.html',
-                           book_name = list(popular_df['Book-Title'].values),
-                           author=list(popular_df['Book-Author'].values),
-                           image=list(popular_df['Image-URL-M'].values),
-                           votes=list(popular_df['num_ratings'].values),
-                           rating=list(popular_df['avg_rating'].values)
-                           )
+    top_books = [
+        {
+            'title': t,
+            'author': a,
+            'image': https(i),
+            'votes': int(v),
+            'rating': round(float(r), 1),
+        }
+        for t, a, i, v, r in zip(
+            popular_df['Book-Title'],
+            popular_df['Book-Author'],
+            popular_df['Image-URL-M'],
+            popular_df['num_ratings'],
+            popular_df['avg_rating'],
+        )
+    ]
+    return render_template('index.html', books=top_books, titles=TITLES)
+
 
 @app.route('/recommend')
 def recommend_ui():
-    return render_template('recommend.html')
+    return render_template('recommend.html', titles=TITLES)
 
-@app.route('/recommend_books',methods=['post'])
+
+@app.route('/recommend_books', methods=['POST'])
 def recommend():
-    user_input = request.form.get('user_input')
-    index = np.where(pt.index == user_input)[0][0]
-    similar_items = sorted(list(enumerate(similarity_scores[index])), key=lambda x: x[1], reverse=True)[1:5]
+    user_input = (request.form.get('user_input') or '').strip()
+    matches = np.where(LOWER_TITLES == user_input.lower())[0]
+
+    # Book not in the dataset: show a helpful message instead of crashing
+    if len(matches) == 0:
+        return render_template('recommend.html', titles=TITLES,
+                               query=user_input, not_found=True, data=[])
+
+    idx = matches[0]
+    similar_items = sorted(enumerate(similarity_scores[idx]),
+                           key=lambda x: x[1], reverse=True)[1:9]
 
     data = []
-    for i in similar_items:
-        item = []
-        temp_df = books[books['Book-Title'] == pt.index[i[0]]]
-        item.extend(list(temp_df.drop_duplicates('Book-Title')['Book-Title'].values))
-        item.extend(list(temp_df.drop_duplicates('Book-Title')['Book-Author'].values))
-        item.extend(list(temp_df.drop_duplicates('Book-Title')['Image-URL-M'].values))
+    for i, _score in similar_items:
+        title = pt.index[i]
+        row = book_info.loc[title]
+        data.append({
+            'title': title,
+            'author': row['Book-Author'],
+            'image': https(row['Image-URL-M']),
+        })
 
-        data.append(item)
+    return render_template('recommend.html', titles=TITLES,
+                           query=pt.index[idx], data=data)
 
-    print(data)
-
-    return render_template('recommend.html',data=data)
 
 if __name__ == '__main__':
     app.run(debug=True)
