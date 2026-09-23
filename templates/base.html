@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Bookshelf – find your next read{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { ink: '#15231f', sage: '#e9eee9', paper: '#f8f9f5', oxblood: '#8c2f39', moss: '#5b6b65' },
+        fontFamily: {
+          serif: ['Newsreader', 'Georgia', 'serif'],
+          sans: ['Instrument Sans', 'system-ui', 'sans-serif']
+        }
+      } }
+    }
+  </script>
+</head>
+<body class="bg-sage text-ink font-sans antialiased min-h-screen flex flex-col">
+
+  <header class="bg-ink text-paper">
+    <nav class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="font-serif text-2xl">Bookshelf</a>
+      <div class="flex gap-6 text-sm">
+        <a href="/" class="hover:underline underline-offset-4">Top books</a>
+        <a href="/recommend" class="hover:underline underline-offset-4">Find a book</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-ink/15 text-sm text-moss">
+    <div class="max-w-6xl mx-auto px-5 py-6">Recommendations are based on ratings from other readers.</div>
+  </footer>
+
+  <script>
+    // Show a loading state while the recommendation is calculated
+    document.querySelectorAll('form[data-loading]').forEach(function (form) {
+      form.addEventListener('submit', function () {
+        var btn = form.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Finding books…';
+      });
+    });
+  </script>
+</body>
+</html>
