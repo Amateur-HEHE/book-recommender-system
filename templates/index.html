@@ -1,50 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Book Recommender System</title>
-    <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-</head>
-<style>
-    .text-white{
-        color:white
-    }
-</style>
-<body style="background-color:black">
+{% extends "base.html" %}
+{% from "_macros.html" import cover %}
 
-    <nav class="navbar" style="background-color:#00a65a">
-        <a class="navbar-brand">My Book recommender</a>
-        <ul class="nav navbar-nav">
-            <li><a href="/">Home</a></li>
-            <li><a href="/recommend">Recommend</a></li>
-            <li><a>Contact</a></li>
-        </ul>
-    </nav>
+{% block content %}
+<section class="max-w-6xl mx-auto px-5 pt-14 pb-16 grid md:grid-cols-2 gap-12 items-center">
+  <div>
+    <h1 class="font-serif text-5xl md:text-6xl leading-[1.05]">Tell us one book you loved. We'll find the next.</h1>
+    <p class="mt-5 text-moss max-w-md">Suggestions come from readers who rated books the way you did.</p>
 
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-                <h1 class="text-white" style="font-size:50px">Top 50 Books</h1>
-            </div>
+    <form action="/recommend_books" method="post" data-loading class="mt-8 flex flex-col sm:flex-row gap-2 max-w-xl">
+      <input name="user_input" list="titles" required autocomplete="off"
+             placeholder="Start typing a book title"
+             class="flex-1 rounded-md border border-ink/25 bg-paper px-4 py-3 focus:outline-none focus:ring-2 focus:ring-oxblood">
+      <button class="rounded-md bg-oxblood text-paper px-5 py-3 font-medium hover:bg-oxblood/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-oxblood disabled:opacity-60">
+        Get recommendations
+      </button>
+    </form>
+    <datalist id="titles">
+      {% for t in titles %}<option value="{{ t }}">{% endfor %}
+    </datalist>
+  </div>
 
-            {% for i in range(book_name|length) %}
-                <div class="col-md-3" style="margin-top:50px">
-                    <div class="card">
-                        <div class="card-body">
-                            <img class="card-img-top" src="{{ image[i] }}">
-                            <p class="text-white">{{ book_name[i] }}</p>
-                            <h4 class="text-white">{{ author[i] }}</h4>
-                            <h4 class="text-white">Votes - {{ votes[i] }}</h4>
-                            <h4 class="text-white">Rating - {{ rating[i] }}</h4>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-
-
-        </div>
+  {# The hero is the top three real books, stacked like they're on a table #}
+  <div class="hidden md:block relative h-[22rem]">
+    {% for b in books[:3] %}
+    <div class="absolute w-44 {{ ['left-4 top-10 -rotate-6', 'left-32 top-0 rotate-2', 'left-60 top-16 rotate-6'][loop.index0] }}">
+      {{ cover(b.image, b.title) }}
     </div>
+    {% endfor %}
+  </div>
+</section>
 
-</body>
-</html>
+<section class="max-w-6xl mx-auto px-5 pb-20">
+  <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink/15 pb-3">
+    <h2 class="font-serif text-3xl">Top {{ books|length }} books</h2>
+    <p class="text-sm text-moss">Highest rated among widely read books</p>
+  </div>
+
+  <ol class="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-10">
+    {% for b in books %}
+    <li>
+      <div class="relative">
+        {{ cover(b.image, b.title) }}
+        <span class="absolute -top-2 -left-2 grid place-items-center w-7 h-7 rounded-full bg-ink text-paper text-xs font-semibold">{{ loop.index }}</span>
+      </div>
+      <h3 class="mt-4 font-serif text-lg leading-snug line-clamp-2">{{ b.title }}</h3>
+      <p class="text-sm text-moss line-clamp-1">{{ b.author }}</p>
+      <p class="mt-2 text-sm">
+        <span class="font-semibold text-oxblood">★ {{ b.rating }}</span>
+        <span class="text-moss">· {{ '{:,}'.format(b.votes) }} ratings</span>
+      </p>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}
