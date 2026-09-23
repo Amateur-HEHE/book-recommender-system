@@ -1,0 +1,9 @@
+{# Book cover with a title fallback if the image is missing or a 1px placeholder #}
+{% macro cover(src, title) %}
+<div class="relative aspect-[2/3] rounded-[3px] bg-ink/10 overflow-hidden shadow-[3px_4px_0_rgba(21,35,31,.16)]">
+  <span class="absolute inset-0 grid place-items-center p-3 text-center font-serif text-sm text-moss">{{ title }}</span>
+  <img src="{{ src }}" alt="Cover of {{ title }}" loading="lazy"
+       class="relative w-full h-full object-cover"
+       onload="if(this.naturalWidth<10)this.remove()" onerror="this.remove()">
+</div>
+{% endmacro %}
